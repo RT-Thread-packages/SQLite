@@ -312,7 +312,7 @@ static int _rtthread_fcntl_size_hint(sqlite3_file *file_id, i64 nByte)
             ** This is a similar technique to that used by glibc on systems
             ** that do not have a real fallocate() call.
             */
-            int nBlk = buf.st_blksize;  /* File-system block size */
+            int nBlk = 512;  /* File-system block size */
             int nWrite = 0;             /* Number of bytes written by seekAndWrite */
             i64 iWrite;                 /* Next offset to write to */
 
