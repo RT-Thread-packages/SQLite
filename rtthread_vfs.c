@@ -344,7 +344,7 @@ static int _rtthread_vfs_open(sqlite3_vfs *pvfs, const char *file_path, sqlite3_
 
     fd = _rtthread_fs_open(file_path, openFlags, openMode);
 
-    if (fd < 0 && (errno != DFS_STATUS_EISDIR) && isReadWrite && !isExclusive)
+    if (fd < 0 && (errno != -EISDIR) && isReadWrite && !isExclusive)
     {
         /* Failed to open the file for read/write access. Try read-only. */
         flags &= ~(SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
@@ -387,7 +387,7 @@ int _rtthread_vfs_delete(sqlite3_vfs* pvfs, const char *file_path, int syncDir)
 
     if (unlink(file_path) == (-1))
     {
-        if (errno == DFS_STATUS_ENOENT)
+        if (errno == -ENOENT)
         {
             rc = SQLITE_IOERR_DELETE_NOENT;
         }
