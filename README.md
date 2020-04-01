@@ -43,11 +43,11 @@ RT-Thread online packages  --->
 ## 依赖
 - RT-Thread 3.X+
 - DFS组件
-## dbhelp接口说明
+## dbhelper接口说明
 
-dbhelp是对sqlite3操作接口的封装，目的是使用户更加简单地操作sqlite。
+dbhelper是对sqlite3操作接口的封装，目的是使用户更加简单地操作sqlite。
 ### 初始化
-dbhelp初始化，其中包含了sqlite的初始化及互斥量创建。用户无需再对数据库及锁初始化。
+dbhelper初始化，其中包含了sqlite的初始化及互斥量创建。用户无需再对数据库及锁初始化。
 ```c
 int db_helper_init(void);
 ```
@@ -68,6 +68,8 @@ int db_create_database(const char *sqlstr);
 | 返回   |                 |
 | 0      | 成功            |
 | 非0    | 失败            |
+
+
 输入形参sqlstr应当是一条创建表的SQL语句，例：
 ```c
 const char *sql = "CREATE TABLE student(id INTEGER PRIMARY KEY AUTOINCREMENT,name varchar(32) NOT NULL,score INT NOT NULL);";
@@ -87,6 +89,8 @@ int db_nonquery_operator(const char *sqlstr, int (*bind)(sqlite3_stmt *, int ind
 | 返回   |                                                              |
 | 0      | 成功                                                         |
 | 非0    | 失败                                                         |
+
+
 注：该接口请勿用于查询类操作。
 bind需要用户实现：
 | 参数                   | 说明                                                                 |
@@ -114,6 +118,8 @@ int db_nonquery_by_varpara(const char *sql, const char *fmt, ...);
 | 返回 |                                                                   |
 | 0    | 成功                                                              |
 | 非0  | 失败                                                              |
+
+
 注：该接口请勿用于查询类操作。
 例：
 ```c
@@ -129,6 +135,7 @@ db_nonquery_transaction开启了事务功能，支持操作失败后回滚。
 ```c
 int db_nonquery_transaction(int (*exec_sqls)(sqlite3 *db, void *arg), void *arg);
 ```
+
 | 参数      | 说明                                           |
 | --------- | ---------------------------------------------- |
 | exec_sqls | SQL执行回调                                    |
@@ -145,6 +152,8 @@ exec_sqls：
 | 返回                   |                                                                              |
 | SQLITE_OK或SQLITE_DONE | 成功                                                                         |
 | 其他                   | 失败(如果用户提供的exec_sqls返回失败，db_nonquery_transaction将执行回滚操作) |
+
+
 注：该接口请勿用于查询类操作。
 db_nonquery_transaction的自由度比较大，内部开启事务后就开始执行exec_sqls，用户可在exec_sqls通过调用SQLite的接口进行相关的数据库操作。执行完exec_sqls后提交事务。如果有失败情况会回滚。
 
@@ -186,6 +195,7 @@ int db_query_count_result(const char *sql);
 | 返回   |                                                                   |
 | 非负值 | 符合条件的条目的数量                                              |
 | 负数   | 查询失败                                                          |
+
 例如，查询数据库中表的数量：
 ```c
 nums = db_query_count_result("select count(*) from sqlite_master where type = 'table';");
