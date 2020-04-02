@@ -12,7 +12,7 @@
 #define __DBHELPER_H__
 
 #include <sqlite3.h>
-#define DB_NAME PKG_SQLITE_DB_NAME
+#define DB_NAME "/rt.db"
 #define DB_SQL_MAX_LEN PKG_SQLITE_SQL_MAX_LEN
 int db_helper_init(void);
 int db_create_database(const char *sqlstr);
