@@ -13,13 +13,20 @@
 #include <rtthread.h>
 #include <ctype.h>
 #include "dbhelper.h"
+
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "app.dbhelper"
 #define DBG_LEVEL DBG_INFO
 #define DBG_COLOR
 #include <rtdbg.h>
 
+#if PKG_SQLITE_DB_NAME_MAX_LEN < 8
+#error "the database name length is too short"
+#endif
+#define DEFAULT_DB_NAME "/rt.db"
+
 static rt_mutex_t db_mutex_lock = RT_NULL;
+static char db_name[PKG_SQLITE_DB_NAME_MAX_LEN + 1] = DEFAULT_DB_NAME;
 
 /**
  * This function will initialize SQLite3 create a mutex as a lock.
@@ -113,10 +120,13 @@ static int db_bind_by_var(sqlite3_stmt *stmt, const char *fmt, va_list args)
  *
  * @param sql the SQL statements.
  * @param create the callback function supported by user.
+ *              create@param stmt the SQL statement after preparing.
+ *              create@param arg the input parameter from 'db_query_by_varpara' arg.
+ *              create@return rule:SQLITE_OK:success,others:fail
  * @param arg the parameter for the callback "create".
  * @param fmt the args format.such as %s string,%d int.
  * @param ... the additional arguments
- * @return  success or fail.
+ * @return  =SQLITE_OK:success, others:fail.
  */
 int db_query_by_varpara(const char *sql, int (*create)(sqlite3_stmt *stmt, void *arg), void *arg, const char *fmt, ...)
 {
@@ -124,10 +134,10 @@ int db_query_by_varpara(const char *sql, int (*create)(sqlite3_stmt *stmt, void 
     sqlite3_stmt *stmt = NULL;
     if (sql == NULL)
     {
-        return -RT_ERROR;
+        return SQLITE_ERROR;
     }
     rt_mutex_take(db_mutex_lock, RT_WAITING_FOREVER);
-    int rc = sqlite3_open(DB_NAME, &db);
+    int rc = sqlite3_open(db_name, &db);
     if (rc != SQLITE_OK)
     {
         LOG_E("open database failed,rc=%d", rc);
@@ -167,7 +177,6 @@ int db_query_by_varpara(const char *sql, int (*create)(sqlite3_stmt *stmt, void 
     goto __db_exec_ok;
 __db_exec_fail:
     LOG_E("db operator failed,rc=%d", rc);
-    rc = 0;
 __db_exec_ok:
     sqlite3_close(db);
     rt_mutex_release(db_mutex_lock);
@@ -181,8 +190,12 @@ __db_exec_ok:
  * @param sqlstr the SQL statements strings.if there are more than one 
  *               statements in the sqlstr to execute,separate them by a semicolon(;).
  * @param bind the callback function supported by user.bind data and call the sqlite3_step function.
+ *             bind@param stmt the SQL statement after preparing.
+ *             bind@param index the index of SQL statements strings.
+ *             bind@param param the parameter from 'db_nonquery_operator' arg.
+ *             bind@return SQLITE_OK or SQLITE_DONE:success,others:fail
  * @param param the parameter for the callback "bind".
- * @return  success or fail.
+ * @return  =SQLITE_OK:success, others:fail.
  */
 int db_nonquery_operator(const char *sqlstr, int (*bind)(sqlite3_stmt *stmt, int index, void *param), void *param)
 {
@@ -195,7 +208,7 @@ int db_nonquery_operator(const char *sqlstr, int (*bind)(sqlite3_stmt *stmt, int
         return SQLITE_ERROR;
     }
     rt_mutex_take(db_mutex_lock, RT_WAITING_FOREVER);
-    int rc = sqlite3_open(DB_NAME, &db);
+    int rc = sqlite3_open(db_name, &db);
     if (rc != SQLITE_OK)
     {
         LOG_E("open database failed,rc=%d", rc);
@@ -287,7 +300,7 @@ __db_exec_ok:
  * @param sql the SQL statement.
  * @param fmt the args format.such as %s string,%d int.
  * @param ... the additional arguments
- * @return  success or fail.
+ * @return  =SQLITE_OK:success, others:fail.
  */
 int db_nonquery_by_varpara(const char *sql, const char *fmt, ...)
 {
@@ -298,7 +311,7 @@ int db_nonquery_by_varpara(const char *sql, const char *fmt, ...)
         return SQLITE_ERROR;
     }
     rt_mutex_take(db_mutex_lock, RT_WAITING_FOREVER);
-    int rc = sqlite3_open(DB_NAME, &db);
+    int rc = sqlite3_open(db_name, &db);
     if (rc != SQLITE_OK)
     {
         LOG_E("open database failed,rc=%d\n", rc);
@@ -330,7 +343,7 @@ int db_nonquery_by_varpara(const char *sql, const char *fmt, ...)
         LOG_E("bind error,rc=%d", rc);
         goto __db_exec_fail;
     }
-    rc = 0;
+    rc = SQLITE_OK;
     goto __db_exec_ok;
 
 __db_exec_fail:
@@ -346,15 +359,18 @@ __db_exec_ok:
  * This function will be used for the transaction that is not SELECT.
  *
  * @param exec_sqls the callback function of executing SQL statements.
+ *                  exec_sqls@param db the database connection handle
+ *                  exec_sqls@param arg the input parameter from 'db_nonquery_transaction' function parameter 'arg'.
+ *                  exec_sqls@return =SQLITE_OK or =SQLITE_DONE:success,others:fail
  * @param arg the parameter for the callback "exec_sqls".
- * @return  success or fail.
+ * @return  =SQLITE_OK:success, others:fail.
  */
 int db_nonquery_transaction(int (*exec_sqls)(sqlite3 *db, void *arg), void *arg)
 {
     sqlite3 *db = NULL;
 
     rt_mutex_take(db_mutex_lock, RT_WAITING_FOREVER);
-    int rc = sqlite3_open(DB_NAME, &db);
+    int rc = sqlite3_open(db_name, &db);
     if (rc != SQLITE_OK)
     {
         LOG_E("open database failed,rc=%d", rc);
@@ -421,7 +437,7 @@ static int db_get_count(sqlite3_stmt *stmt, void *arg)
  * This function only gets the 1st row of the 1st column.
  *
  * @param sql the SQL statement SELECT COUNT() FROM .
- * @return  the count or fail.
+ * @return  >=0:the count ,<0: fail.
  */
 int db_query_count_result(const char *sql)
 {
@@ -440,7 +456,7 @@ int db_query_count_result(const char *sql)
  * @param stmt the SQL statement returned by the function sqlite3_step().
  * @param index the colum index.the first colum's index value is 0.
  * @param out the output buffer.the result will put in this buffer.
- * @return  the result length or fail.
+ * @return  >=0:the result length ,<0: fail.
  */
 int db_stmt_get_blob(sqlite3_stmt *stmt, int index, unsigned char *out)
 {
@@ -460,7 +476,7 @@ int db_stmt_get_blob(sqlite3_stmt *stmt, int index, unsigned char *out)
  * @param stmt the SQL statement returned by the function sqlite3_step().
  * @param index the colum index.the first colum's index value is 0.
  * @param out the output buffer.the result will put in this buffer.
- * @return  the result length or fail.
+ * @return  >=0:the result length ,<0: fail.
  */
 int db_stmt_get_text(sqlite3_stmt *stmt, int index, char *out)
 {
@@ -519,4 +535,81 @@ int db_table_is_exist(const char *tbl_name)
         return cnt;
     }
     return -RT_ERROR;
+}
+
+/**
+ * This function will connect DB 
+ * 
+ * @param name the DB filename.
+ * @return RT_EOK:success
+ *         -RT_ERROR:the input name is too long
+ */
+int db_connect(char *name)
+{
+    int32_t len = 0;
+    rt_mutex_take(db_mutex_lock, RT_WAITING_FOREVER);
+    len = rt_strnlen(name, PKG_SQLITE_DB_NAME_MAX_LEN + 1);
+    if (len >= PKG_SQLITE_DB_NAME_MAX_LEN + 1)
+    {
+        LOG_E("the database name '(%s)' lengh is too long(max:%d).", name, PKG_SQLITE_DB_NAME_MAX_LEN);
+        rt_mutex_release(db_mutex_lock);
+        return -RT_ERROR;
+    }
+    rt_strncpy(db_name, name, len);
+    db_name[len] = '\0';
+    return RT_EOK;
+}
+/**
+ * This function will disconnect DB 
+ * 
+ * @param name the DB filename.
+ * @return RT_EOK:success
+ *         -RT_ERROR:the input name is too long
+ */
+int db_disconnect(char *name)
+{
+    int32_t len = 0;
+    rt_mutex_release(db_mutex_lock);
+    rt_strncpy(db_name, DEFAULT_DB_NAME, strlen(DEFAULT_DB_NAME));
+    db_name[len] = '\0';
+    return RT_EOK;
+}
+
+/**
+ * This function will connect DB 
+ * 
+ * @param name the DB filename.
+ * @return RT_EOK:success
+ *         -RT_ERROR:the input name is too long
+ */
+int db_set_name(char *name)
+{
+    int32_t len = 0;
+    rt_mutex_take(db_mutex_lock, RT_WAITING_FOREVER);
+    len = rt_strnlen(name, PKG_SQLITE_DB_NAME_MAX_LEN + 1);
+    if (len >= PKG_SQLITE_DB_NAME_MAX_LEN + 1)
+    {
+        LOG_E("the database name '(%s)' lengh is too long(max:%d).", name, PKG_SQLITE_DB_NAME_MAX_LEN);
+        rt_mutex_release(db_mutex_lock);
+        return -RT_ERROR;
+    }
+    rt_strncpy(db_name, name, len);
+    db_name[len] = '\0';
+    rt_mutex_release(db_mutex_lock);
+    return RT_EOK;
+}
+
+/**
+ * This function will get the current DB filename
+ * 
+ * @return the current DB filename
+ *
+ */
+char *db_get_name(void)
+{
+    static char name[PKG_SQLITE_DB_NAME_MAX_LEN + 1];
+    size_t len = rt_strlen(db_name);
+    rt_strncpy(name, db_name, len);
+    name[len] = '\0';
+    return name;
 }

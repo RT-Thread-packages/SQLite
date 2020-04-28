@@ -164,18 +164,18 @@ int db_query_by_varpara(const char *sql, int (*create)(sqlite3_stmt *stmt, void 
 | arg                    | 将赋值给create的void *arg作为输入参数                             |
 | fmt                    | 格式符，配合后面的可变参数使用，用法类似printf，只支持%d,%f,%s,%x |
 | ...                    | 变参                                                              |
-| 返回                   |                                                                   |
-| SQLITE_OK或SQLITE_DONE | 成功                                                              |
-| 其他                   | 失败                                                              |
+| 返回（creat!=NULL）    |                                                                   |
+| 返回create的返回值     |                                                                   |
+| 返回（create==NULL时） |                                                                   |
+| 0                      |                                                                   |
 
 create回调：
-| 参数                   | 说明                                                 |
-| ---------------------- | ---------------------------------------------------- |
-| stmt                   | sqlite3_stmt预备语句对象                             |
-| arg                    | 接收来由db_query_by_varpara的void *arg传递进来的形参 |
-| 返回                   |                                                      |
-| SQLITE_OK或SQLITE_DONE | 成功                                                 |
-| 其他                   | 失败                                                 |
+| 参数                              | 说明                                                 |
+| --------------------------------- | ---------------------------------------------------- |
+| stmt                              | sqlite3_stmt预备语句对象                             |
+| arg                               | 接收来由db_query_by_varpara的void *arg传递进来的形参 |
+| 返回                              |                                                      |
+| 返回值将被db_query_by_varpara返回 |                                                      |
 
 用户可通过调用在通过调用db_stmt_get_int，db_stmt_get_text等接口配合sqlite3_step获取查询结果，回调接收不定数量的条目时请注意内存用量，或在查询前先通过db_query_count_result确定条符合条件的条目数量。
 
@@ -259,6 +259,55 @@ int db_table_is_exist(const char *tbl_name)
 | 正值     | 已存在   |
 | 0        | 不存在   |
 | 负值     | 查询错误 |
+
+
+### 设置数据库文件名
+该文件名应为绝对路径，请使用.db作为扩展名。在对单数据库的使用场景中可用来设置数据库名称。多线程多数据库请使用int db_connect(char *name)和int db_connect(char *name)。
+```c
+int db_set_name(char *name)
+```
+| 参数   | 说明                   |
+| ------ | ---------------------- |
+| name   | 文件名（完整绝对路径） |
+| 返回   |                        |
+| RT_EOK | 设置成功               |
+| <0     | 设置失败               |
+
+### 读取当前数据库文件名
+```c
+const char *db_get_name(void)
+```
+| 参数   | 说明     |
+| ------ | -------- |
+| 返回   |          |
+| 字符串 | 设置成功 |
+| <0     | 设置失败 |
+
+### 连接数据库
+该文件名应为绝对路径，请使用.db作为扩展名，该方法将会设置要打开的数据库文件名并加锁，操作完毕后请调用 int db_disconnect(char *name) 解锁，以便以其他线程操作。适用于多线程操作多数据库场景。如果是多线程，单数据库场景请使用 int db_set_name(char *name) 来修改数据库名称或直接操作数据库（即使用默认数据库名称）。
+```c
+int db_connect(char *name)
+```
+| 参数   | 说明                   |
+| ------ | ---------------------- |
+| name   | 文件名（完整绝对路径） |
+| 返回   |                        |
+| RT_EOK | 设置成功               |
+| <0     | 设置失败               |
+
+### 断开数据库连接
+断开数据库连接，数据库名称将恢复为默认，并释放互斥量。
+
+```c
+int db_connect(char *name)
+```
+| 参数   | 说明                   |
+| ------ | ---------------------- |
+| name   | 文件名（完整绝对路径） |
+| 返回   |                        |
+| RT_EOK | 设置成功               |
+| <0     | 设置失败               |
+
 
 ## DAO层实例
 这是一个学生成绩录入查询的DAO(Data Access Object)层示例，可在menuconfig中配置使能。通过此例程可更加详细的了解dbhelper的使用方法。例程配置使能后，可通过命令行实现对student表的操作，具体命令如下：

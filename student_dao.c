@@ -122,7 +122,6 @@ void student_print_list(rt_list_t *q)
 static int student_create_queue(sqlite3_stmt *stmt, void *arg)
 {
     rt_list_t *q = arg;
-    rt_list_init(q);
     student_t *s;
     int ret, count = 0;
     ret = sqlite3_step(stmt);
@@ -135,6 +134,7 @@ static int student_create_queue(sqlite3_stmt *stmt, void *arg)
         s = rt_calloc(sizeof(student_t), 1);
         if (!s)
         {
+            LOG_E("No enough memory!");
             goto __create_student_fail;
         }
         s->id = db_stmt_get_int(stmt, 0);
@@ -145,8 +145,7 @@ static int student_create_queue(sqlite3_stmt *stmt, void *arg)
     } while ((ret = sqlite3_step(stmt)) == SQLITE_ROW);
     return count;
 __create_student_fail:
-    student_free_list(q);
-    return 0;
+    return -1;
 }
 
 int student_get_all(rt_list_t *q)
@@ -158,11 +157,19 @@ static void list_all(void)
 {
     rt_kprintf("test get all students\n");
     rt_list_t *h = rt_calloc(sizeof(student_t), 1);
+    rt_list_init(h);
     int ret = student_get_all(h);
-    student_print_list(h);
-    rt_kprintf("record(s):%d\n", ret);
+    if (ret >= 0)
+    {
+        student_print_list(h);
+        rt_kprintf("record(s):%d\n", ret);
+    }
+    else
+    {
+        rt_kprintf("Get students information failed");
+    }
     student_free_list(h);
-    rt_free(h);
+    return;
 }
 
 int student_get_by_score(rt_list_t *h, int ls, int hs, enum order_type order)
@@ -176,12 +183,20 @@ int student_get_by_score(rt_list_t *h, int ls, int hs, enum order_type order)
 static void list_by_score(int ls, int hs, enum order_type order)
 {
     rt_list_t *h = rt_calloc(sizeof(rt_list_t), 1);
-
+    rt_list_init(h);
     rt_kprintf("the student list of score between %d and %d:\n", ls, hs);
     int ret = student_get_by_score(h, ls, hs, order);
-    student_print_list(h);
+    if (ret >= 0)
+    {
+        student_print_list(h);
+        rt_kprintf("record(s):%d\n", ret);
+    }
+    else
+    {
+        LOG_E("Get students information failed!");
+    }
     student_free_list(h);
-    rt_kprintf("record(s):%d\n", ret);
+    return;
 }
 
 static void stu(uint8_t argc, char **argv)
@@ -222,20 +237,22 @@ static void stu(uint8_t argc, char **argv)
             }
             int res = student_add(h);
             student_free_list(h);
-            if (res != 0)
+            if (res != SQLITE_OK)
             {
-                rt_kprintf("add failed!");
+                LOG_E("add failed!");
             }
-
-            ticks = rt_tick_get() - ticks;
-            rt_kprintf("Insert %d record(s): %dms, speed: %dms/record\n", count,
-                       ticks * 1000 / RT_TICK_PER_SECOND, ticks * 1000 / RT_TICK_PER_SECOND / count);
+            else
+            {
+                ticks = rt_tick_get() - ticks;
+                rt_kprintf("Insert %d record(s): %dms, speed: %dms/record\n", count,
+                           ticks * 1000 / RT_TICK_PER_SECOND, ticks * 1000 / RT_TICK_PER_SECOND / count);
+            }
         }
         else if (rt_strcmp(cmd, "del") == 0)
         {
             if (argc == 2)
             {
-                if (student_del_all() == 0)
+                if (student_del_all() == SQLITE_OK)
                 {
                     rt_kprintf("Del all record success!\n");
                 }
@@ -247,7 +264,7 @@ static void stu(uint8_t argc, char **argv)
             else
             {
                 rt_uint32_t id = atol(argv[2]);
-                if (student_del(id) == 0)
+                if (student_del(id) == SQLITE_OK)
                 {
                     rt_kprintf("Del record success with id:%d\n", id);
                 }
@@ -266,7 +283,7 @@ static void stu(uint8_t argc, char **argv)
                 s->id = atol(argv[2]);
                 rt_strncpy(s->name, argv[3], rt_strlen(argv[3]));
                 s->score = atol(argv[4]);
-                if (student_update(s) == 0)
+                if (student_update(s) == SQLITE_OK)
                 {
                     rt_kprintf("update record success!\n");
                 }
@@ -323,7 +340,10 @@ MSH_CMD_EXPORT(stu, student add del update query);
 
 static int create_student_tbl(void)
 {
-    int fd = open(DB_NAME, O_RDONLY);
+    int fd = 0;
+    db_set_name("/stu_info.db");
+    fd = open(db_get_name(), O_RDONLY);
+    rt_kprintf(db_get_name());
     if (fd < 0)
     {
         /* there is not the .db file.create db and table */

@@ -12,11 +12,12 @@
 #define __DBHELPER_H__
 
 #include <sqlite3.h>
-#define DB_NAME "/rt.db"
+#include <rtthread.h>
+
 #define DB_SQL_MAX_LEN PKG_SQLITE_SQL_MAX_LEN
+
 int db_helper_init(void);
 int db_create_database(const char *sqlstr);
-
 /**
  * This function will be used for the operating that is not SELECT.It support executing multiple 
  * SQL statements.
@@ -110,6 +111,7 @@ int db_stmt_get_int(sqlite3_stmt *stmt, int index);
  * @return  the result.
  */
 double db_stmt_get_double(sqlite3_stmt *stmt, int index);
+
 /**
  * This function will check a table exist or not by table name.
  * 
@@ -117,4 +119,30 @@ double db_stmt_get_double(sqlite3_stmt *stmt, int index);
  * @return >0:existed; ==0:not existed; <0:ERROR
  */
 int db_table_is_exist(const char *tbl_name);
+
+/**
+ * This function will connect DB 
+ * 
+ * @param name the DB filename.
+ * @return RT_EOK:success
+ *         -RT_ERROR:the input name is too long
+ */
+int db_connect(char *name);
+
+/**
+ * This function will disconnect DB 
+ * 
+ * @param name the DB filename.
+ * @return RT_EOK:success
+ *         -RT_ERROR:the input name is too long
+ */
+int db_disconnect(char *name);
+
+/**
+ * This function will get the current DB filename
+ * 
+ * @return the current DB filename
+ *
+ */
+char *db_get_name(void);
 #endif
