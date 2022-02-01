@@ -1,4 +1,4 @@
-# SQLite 
+# SQLite for RT-Thread
 
 ## 简介 
 
