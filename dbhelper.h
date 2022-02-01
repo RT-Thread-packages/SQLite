@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2020, RT-Thread Development Team
+ * Copyright (c) 2006-2022, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -19,10 +19,10 @@
 int db_helper_init(void);
 int db_create_database(const char *sqlstr);
 /**
- * This function will be used for the operating that is not SELECT.It support executing multiple 
+ * This function will be used for the operating that is not SELECT.It support executing multiple
  * SQL statements.
  *
- * @param sqlstr the SQL statements strings.if there are more than one 
+ * @param sqlstr the SQL statements strings.if there are more than one
  *               statements in the sqlstr to execute,separate them by a semicolon(;).
  * @param bind the callback function supported by user.bind data and call the sqlite3_step function.
  * @param param the parameter for the callback "bind".
@@ -31,8 +31,8 @@ int db_create_database(const char *sqlstr);
 int db_nonquery_operator(const char *sqlstr, int (*bind)(sqlite3_stmt *, int index, void *arg), void *param);
 
 /**
- * This function will be used for the operating that is not SELECT.The additional 
- * arguments following format are formatted and inserted in the resulting string 
+ * This function will be used for the operating that is not SELECT.The additional
+ * arguments following format are formatted and inserted in the resulting string
  * replacing their respective specifiers.
  *
  * @param sql the SQL statement.
@@ -52,7 +52,7 @@ int db_nonquery_by_varpara(const char *sql, const char *fmt, ...);
 int db_nonquery_transaction(int (*exec_sqls)(sqlite3 *db, void *arg), void *arg);
 
 /**
- * This function will be used for the SELECT operating.The additional arguments 
+ * This function will be used for the SELECT operating.The additional arguments
  * following format are formatted and inserted in the resulting string replacing
  * their respective specifiers.
  *
@@ -114,15 +114,15 @@ double db_stmt_get_double(sqlite3_stmt *stmt, int index);
 
 /**
  * This function will check a table exist or not by table name.
- * 
+ *
  * @param tbl_name the table name.
  * @return >0:existed; ==0:not existed; <0:ERROR
  */
 int db_table_is_exist(const char *tbl_name);
 
 /**
- * This function will connect DB 
- * 
+ * This function will connect DB
+ *
  * @param name the DB filename.
  * @return RT_EOK:success
  *         -RT_ERROR:the input name is too long
@@ -130,8 +130,8 @@ int db_table_is_exist(const char *tbl_name);
 int db_connect(char *name);
 
 /**
- * This function will disconnect DB 
- * 
+ * This function will disconnect DB
+ *
  * @param name the DB filename.
  * @return RT_EOK:success
  *         -RT_ERROR:the input name is too long
@@ -140,7 +140,7 @@ int db_disconnect(char *name);
 
 /**
  * This function will get the current DB filename
- * 
+ *
  * @return the current DB filename
  *
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2020, RT-Thread Development Team
+ * Copyright (c) 2006-2022, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -114,7 +114,7 @@ static int db_bind_by_var(sqlite3_stmt *stmt, const char *fmt, va_list args)
 }
 
 /**
- * This function will be used for the SELECT operating.The additional arguments 
+ * This function will be used for the SELECT operating.The additional arguments
  * following format are formatted and inserted in the resulting string replacing
  * their respective specifiers.
  *
@@ -184,10 +184,10 @@ __db_exec_ok:
 }
 
 /**
- * This function will be used for the operating that is not SELECT.It support executing multiple 
+ * This function will be used for the operating that is not SELECT.It support executing multiple
  * SQL statements.
  *
- * @param sqlstr the SQL statements strings.if there are more than one 
+ * @param sqlstr the SQL statements strings.if there are more than one
  *               statements in the sqlstr to execute,separate them by a semicolon(;).
  * @param bind the callback function supported by user.bind data and call the sqlite3_step function.
  *             bind@param stmt the SQL statement after preparing.
@@ -293,8 +293,8 @@ __db_exec_ok:
 }
 
 /**
- * This function will be used for the operating that is not SELECT.The additional 
- * arguments following format are formatted and inserted in the resulting string 
+ * This function will be used for the operating that is not SELECT.The additional
+ * arguments following format are formatted and inserted in the resulting string
  * replacing their respective specifiers.
  *
  * @param sql the SQL statement.
@@ -516,7 +516,7 @@ double db_stmt_get_double(sqlite3_stmt *stmt, int index)
 
 /**
  * This function will check a table exist or not by table name.
- * 
+ *
  * @param tbl_name the table name.
  * @return >0:existed; ==0:not existed; <0:ERROR
  */
@@ -538,8 +538,8 @@ int db_table_is_exist(const char *tbl_name)
 }
 
 /**
- * This function will connect DB 
- * 
+ * This function will connect DB
+ *
  * @param name the DB filename.
  * @return RT_EOK:success
  *         -RT_ERROR:the input name is too long
@@ -560,8 +560,8 @@ int db_connect(char *name)
     return RT_EOK;
 }
 /**
- * This function will disconnect DB 
- * 
+ * This function will disconnect DB
+ *
  * @param name the DB filename.
  * @return RT_EOK:success
  *         -RT_ERROR:the input name is too long
@@ -576,8 +576,8 @@ int db_disconnect(char *name)
 }
 
 /**
- * This function will connect DB 
- * 
+ * This function will connect DB
+ *
  * @param name the DB filename.
  * @return RT_EOK:success
  *         -RT_ERROR:the input name is too long
@@ -601,7 +601,7 @@ int db_set_name(char *name)
 
 /**
  * This function will get the current DB filename
- * 
+ *
  * @return the current DB filename
  *
  */

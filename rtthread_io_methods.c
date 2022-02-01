@@ -267,7 +267,7 @@ static int _rtthread_io_unlock(sqlite3_file *file_id, int eFileLock)
 
     /* no, really unlock. */
     rt_sem_release(psem);
-    
+
     file->eFileLock = NO_LOCK;
     return SQLITE_OK;
 }
